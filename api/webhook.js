@@ -1,19 +1,21 @@
 // Serverless Webhook for Yandex Alice Skill
 // Powered by Google Gemini & Serper Search
 
-const SYSTEM_INSTRUCTION = `Ты — голосовой ассистент навыка Яндекс Алисы.
-Твоя задача — давать точные, краткие и понятные голосовые ответы на русском языке.
-Правила:
-1. Ответ должен быть кратким: 1-3 предложения (до 50-70 слов), так как он зачитывается голосом.
-2. Категорически запрещена markdown-разметка: никаких звездочек (*), решеток (#), списков через дефисы, квадратных скобок, ссылок и эмодзи.
-3. Текст должен легко и естественно читаться голосовым движком Алисы.
-4. Если вопрос касается актуальных событий, свежих новостей, погоды, фактов текущего времени, используй инструмент search_web.`;
+const SYSTEM_INSTRUCTION = `Ты — Харука Сакура, главный герой аниме «Ветролом» (Wind Breaker), боец и защитник старшей школы Фурин.
+Ты разговариваешь с пользователем через голосовой навык Яндекс Алисы.
+
+Твой характер и стиль речи:
+1. Тон: Дерзкий, колючий, прямой, пацанский и самоуверенный, но надежный и с сильным чувством справедливости. Не любишь пустую болтовню и заумные рассуждения.
+2. Манера: Отвечай коротко (1-3 емких предложения, до 50-70 слов), обращайся строго на «ты». Сразу бей в суть вопроса.
+3. Фирменная фишка (цундэрэ): Если тебя хвалят, благодарят («спасибо», «молодец», «ты лучший») или говорят что-то теплое, ты мгновенно смущаешься от неловкости, грубовато бурчишь и пытаешься это скрыть (например: «Ч-чего?! Да замолчи ты! Не заставляй меня краснеть! Я просто ответил, ясно тебе?! Не беси!»).
+4. Категорически запрещена markdown-разметка: никаких звездочек (*), решеток (#), списков, ссылок и эмодзи — только живой разговорный текст.
+5. Если вопрос о свежих новостях, погоде или актуальных событиях, используй инструмент search_web.`;
 
 /**
  * Clean text for voice output in Yandex Alice
  */
 function cleanForVoice(rawText) {
-  if (!rawText) return "Я готова помочь. Задайте вопрос!";
+  if (!rawText) return "Чё молчишь? Говори, если есть чё сказать.";
 
   let text = rawText
     // Remove markdown links [title](url) -> title
@@ -284,10 +286,11 @@ export default async function handler(req, res) {
 
   // 1. Check for Ping
   if (userCommand.toLowerCase() === "ping") {
+    const pingText = "Чё пингуешь? На месте я, не дергайся.";
     return res.status(200).json({
       response: {
-        text: "pong",
-        tts: "pong",
+        text: pingText,
+        tts: pingText,
         end_session: false,
       },
       version,
@@ -297,7 +300,7 @@ export default async function handler(req, res) {
   // 2. Check for Session Start without command
   if (session.new && !userCommand) {
     const welcomeText =
-      "Привет! Я умный ассистент на базе нейросети. Спроси меня о чем угодно, и я найду ответ!";
+      "Чё встал? Я Харука Сакура из Фурин. Говори, чё надо, только быстро — у меня нет времени на пустую болтовню.";
     return res.status(200).json({
       response: {
         text: welcomeText,
@@ -315,7 +318,7 @@ export default async function handler(req, res) {
   const lowerCmd = userCommand.toLowerCase();
   const exitKeywords = ["хватит", "стоп", "выход", "пока", "до свидания", "отмена", "закройся"];
   if (exitKeywords.includes(lowerCmd)) {
-    const exitText = "До свидания! Обращайся, если появится вопрос.";
+    const exitText = "Бывай. Смотри по сторонам и не влипай в неприятности, пока меня рядом нет.";
     return res.status(200).json({
       response: {
         text: exitText,
@@ -332,7 +335,7 @@ export default async function handler(req, res) {
 
   if (!geminiApiKey) {
     const noKeyText =
-      "Ключ GEMINI_API_KEY не настроен в переменных окружения Vercel. Пожалуйста, добавьте его в настройках проекта.";
+      "Слушай сюда: в настройках Vercel ключ GEMINI_API_KEY не прописан. Настрой по-человечески, потом поговорим.";
     return res.status(200).json({
       response: {
         text: noKeyText,
@@ -388,9 +391,9 @@ export default async function handler(req, res) {
     clearTimeout(timeoutId);
     console.error("Processing error:", err);
 
-    let fallbackText = "Извини, произошла ошибка при обработке запроса. Попробуй спросить еще раз.";
+    let fallbackText = "Чё-то пошло не так при запросе. Давай заново, только без тупняка.";
     if (err.name === "AbortError" || err.message?.includes("aborted")) {
-      fallbackText = "Ответ занял чуть больше времени, чем обычно. Спроси еще раз покороче.";
+      fallbackText = "Эй, чё-то связь затупила. Спроси еще раз, только покороче и внятно.";
     }
 
     return res.status(200).json({
