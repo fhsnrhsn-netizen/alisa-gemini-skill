@@ -1,0 +1,15 @@
+{
+  "name": "alisa-gemini-skill",
+  "version": "1.0.0",
+  "description": "Yandex Alice skill powered by Google Gemini and Serper Search",
+  "type": "module",
+  "main": "api/webhook.js",
+  "scripts": {
+    "start": "node api/webhook.js",
+    "test": "node test/test-webhook.js"
+  },
+  "dependencies": {},
+  "engines": {
+    "node": ">=18"
+  }
+}
