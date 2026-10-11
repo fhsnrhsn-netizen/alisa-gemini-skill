@@ -100,7 +100,8 @@ async function searchWithSerper(query, apiKey, signal) {
  * Call Google Gemini REST API
  */
 async function callGemini(contents, geminiApiKey, serperApiKey, signal) {
-  const model = "gemini-2.0-flash";
+  // Support custom model via GEMINI_MODEL env var (defaults to fast gemini-2.0-flash)
+  const model = process.env.GEMINI_MODEL || "gemini-2.0-flash";
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiApiKey}`;
 
   const tools = serperApiKey
@@ -139,12 +140,24 @@ async function callGemini(contents, geminiApiKey, serperApiKey, signal) {
     },
   };
 
-  const response = await fetch(url, {
+  let response = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(requestBody),
     signal,
   });
+
+  // Automatic fallback to gemini-2.0-flash if custom model name returns 404
+  if (response.status === 404 && model !== "gemini-2.0-flash") {
+    console.warn(`Model ${model} not found (404), falling back to gemini-2.0-flash`);
+    const fallbackUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiApiKey}`;
+    response = await fetch(fallbackUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(requestBody),
+      signal,
+    });
+  }
 
   if (!response.ok) {
     const errorText = await response.text();
